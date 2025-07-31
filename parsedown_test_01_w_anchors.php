@@ -7,6 +7,12 @@ include '../../../../libapp/parsedown_extra/vendor/autoload.php';
 ?>
 <link rel="stylesheet" href="<?php echo get_appinfo('url'); ?>/assets/plugins/prism-custom/prism-custom-rp.css">
 
+<style>
+#sticky-right-anchor-nav .nav-link i {
+  padding-right: 6px;
+}
+</style>
+
 <div class="pc-content">
   <div id="top"></div>
     <?php includeFileWithVariables(get_appinfo('path') . 'layouts/breadcrumb_weather.php', array('title' => 'ChatGPT', 'pagetitle' => 'New Navigation Class for Phoenix BS5 Template'));
@@ -43,9 +49,6 @@ include '../../../../libapp/parsedown_extra/vendor/autoload.php';
                   <h5 class="lh-1">Topics on this page </h5>
                   <hr>
                   <ul id="sticky-right-anchor-nav" class="nav nav-vertical flex-column doc-nav" data-doc-nav="data-doc-nav">
-                    <li class="nav-item"> <a class="nav-link" href="#topic1"><i
-                          class="ti ti-chevrons-right">&nbsp;</i>Topic1</a>
-                    </li>
                   </ul>
                 </div>
                 <!-- end card-body -->
@@ -95,40 +98,70 @@ var pagefunction = function() {
       });
     });
 
+const navList = document.getElementById('sticky-right-anchor-nav');
+const anchors = document.querySelectorAll('.menu-anchor');
+const iconHTML = '<i class="ti ti-chevrons-right"></i> ';
 
-    const navList = document.getElementById('sticky-right-anchor-nav');
-    const anchors = document.querySelectorAll('.menu-anchor');
+// Step 1: Generate the nav menu
+anchors.forEach(anchor => {
+  const id = anchor.id;
+  if (!id) return;
 
-    anchors.forEach(anchor => {
-      const id = anchor.id;
-      if (!id) return;
+  const heading = anchor.querySelector('h1, h2, h3, h4, h5, h6');
+  const label = heading ? heading.textContent.trim() : id;
 
-      // Extract heading text (first <h2> or <h3> inside the anchor block)
-      const heading = anchor.querySelector('h1, h2, h3, h4, h5, h6');
-      const label = heading ? heading.textContent.trim() : id;
+  const li = document.createElement('li');
+  li.className = 'nav-item';
 
-      const li = document.createElement('li');
-      li.className = 'nav-item';
+  const a = document.createElement('a');
+  a.className = 'nav-link';
+  a.dataset.label = label;
+  a.dataset.scrollTarget = id;
+  a.innerHTML = label;
 
-      const a = document.createElement('a');
-      a.className = 'nav-link';
-      a.textContent = label;
-      a.href = 'javascript:void(0)';
-      a.dataset.scrollTarget = id;
-
-      a.addEventListener('click', function() {
-        const target = document.getElementById(this.dataset.scrollTarget);
-        if (target) {
-          target.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
-        }
+  a.href = 'javascript:void(0)';
+  a.addEventListener('click', function () {
+    const target = document.getElementById(this.dataset.scrollTarget);
+    if (target) {
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
       });
+    }
+  });
 
-      li.appendChild(a);
-      navList.appendChild(li);
-    });
+  li.appendChild(a);
+  navList.appendChild(li);
+});
+
+// Step 2: Handle active icon highlighting with IntersectionObserver
+function clearActiveIcons() {
+  navList.querySelectorAll('a.nav-link').forEach(a => {
+    a.innerHTML = a.dataset.label || a.textContent;
+  });
+}
+
+const observerOptions = {
+  root: null,                // Viewport
+  rootMargin: '0px 0px -60% 0px', // Adjust bottom detection zone
+  threshold: 0.4             // 40% visible triggers callback
+};
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const targetId = entry.target.id;
+    const navLink = navList.querySelector(`a[data-scroll-target="${targetId}"]`);
+
+    if (entry.isIntersecting && navLink) {
+      clearActiveIcons();
+      navLink.innerHTML = iconHTML + navLink.dataset.label;
+    }
+  });
+}, observerOptions);
+
+// Step 3: Observe each anchor section
+anchors.forEach(anchor => observer.observe(anchor));
+
 
 }; // end pagefunction
 
